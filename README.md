@@ -1,12 +1,61 @@
 # File Sharing API
 
-A secure and scalable file-sharing API built with Node.js and Express.  
-Supports file upload, download, and deletion with configurable storage providers (local or Google Cloud Storage).  
-Includes daily upload/download limits, automatic cleanup of inactive files, and robust logging/error handling.
+A secure, scalable, and well-tested file-sharing API built with Node.js and Express.  
+Supports file upload, download, and deletion with configurable storage providers (local filesystem or Google Cloud Storage).  
+Includes daily upload/download limits, automatic cleanup of inactive files, robust logging, and comprehensive error handling.
 
 ---
 
-## Installation & Setup Guide
+## Architecture Diagram
+
+![File Sharing API Architecture](docs/diagram.png)
+
+*The diagram above illustrates the main components: REST API endpoints, daily usage limiter, inactive storage cleanup job, and pluggable storage providers (local or Google Cloud Storage).*
+
+---
+
+## Table of Contents
+
+- [Features](#features)
+- [Architecture Overview](#architecture-overview)
+- [Installation & Setup](#installation--setup)
+- [Environment Variables](#environment-variables)
+- [Google Cloud Storage Setup](#google-cloud-storage-setup)
+- [How to Run](#how-to-run)
+- [REST API Endpoints](#rest-api-endpoints)
+- [Sample Requests & Responses](#sample-requests--responses)
+- [Testing Guide](#testing-guide)
+- [Coding Style & Productivity](#coding-style--productivity)
+- [Implementation Notes](#implementation-notes)
+- [Troubleshooting & Notes](#troubleshooting--notes)
+
+---
+
+## Features
+
+- **File Upload, Download, Delete**: RESTful endpoints for file operations.
+- **Configurable Storage Providers**: Local filesystem or Google Cloud Storage (easy to extend for AWS/Azure).
+- **Rate Limiting**: Daily upload/download limits per IP, tracked via Redis.
+- **Automatic Cleanup**: Background job removes inactive files after a configurable period.
+- **Robust Logging & Error Handling**: Centralized logging and error responses.
+- **Full Test Coverage**: Unit and integration tests for all major components.
+- **Commented Code**: All code is thoroughly commented for maintainability.
+
+---
+
+## Architecture Overview
+
+- **Express.js**: Main web framework.
+- **Multer**: Handles file uploads.
+- **Storage Providers**: Pluggable interface for local and cloud storage.
+- **Redis**: Tracks daily upload/download limits per IP.
+- **Winston**: Logging.
+- **Background Job**: Periodic cleanup of inactive files.
+- **Testing**: Jest and Supertest for unit/integration tests.
+
+---
+
+## Installation & Setup
 
 ### 1. Clone the repository
 ```bash
@@ -26,9 +75,36 @@ npm install
   ```
 - Edit `.env` to set your preferred configuration (port, storage provider, limits, etc).
 
-### 4. (Optional) Configure Google Cloud Storage
+---
 
-#### Google Cloud Storage Setup
+## Environment Variables
+
+Create a `.env` file with the following example configuration:
+
+```
+PORT=6000                     # Port number for the server to listen on
+FOLDER=./uploads              # Directory path for storing uploaded files
+PROVIDER=local                # Storage provider type (local or google)
+
+INACTIVITY_PERIOD=10m         # Period of inactivity before cleanup (default: 30d)
+DAILY_UPLOAD_LIMIT=5MB        # Maximum upload limit per day (default: 100MB)
+DAILY_DOWNLOAD_LIMIT=3MB      # Maximum download limit per day (default: 1GB)
+TIME_TO_CLEAN_UP_PROCESS_IN_MS=60000 # Cleanup interval in milliseconds (default: 1 minute)
+
+# For Redis configuration:
+REDIS_HOST=localhost          # Redis server hostname
+REDIS_PORT=6379               # Redis server port
+REDIS_PASSWORD=               # Redis password (leave empty if not required)
+REDIS_DB=0                    # Redis database index
+
+# For Google Cloud Storage:
+# PROVIDER=google             # Uncomment to use Google Cloud Storage provider
+CONFIG=./config/google-cloud.config.json # Path to Google Cloud config file
+```
+
+---
+
+## Google Cloud Storage Setup
 
 If you want to use Google Cloud Storage as your provider, follow these steps:
 
@@ -109,43 +185,72 @@ If you want to use Google Cloud Storage as your provider, follow these steps:
     npm test
     ```
 
----
-
-## Environment Variables
-
-Create a `.env` file with the following example configuration:
-
-```
-PORT=6000                     # Port number for the server to listen on
-FOLDER=./uploads              # Directory path for storing uploaded files
-PROVIDER=local                # Storage provider type (local or google)
-
-INACTIVITY_PERIOD=10m         # Period of inactivity before cleanup (default: 30d)
-DAILY_UPLOAD_LIMIT=5MB        # Maximum upload limit per day (default: 100MB)
-DAILY_DOWNLOAD_LIMIT=3MB      # Maximum download limit per day (default: 1GB)
-TIME_TO_CLEAN_UP_PROCESS_IN_MS=60000 # Cleanup interval in milliseconds (default: 1 minute)
-
-# For Redis configuration:
-REDIS_HOST=localhost          # Redis server hostname
-REDIS_PORT=6379               # Redis server port
-REDIS_PASSWORD=               # Redis password (leave empty if not required)
-REDIS_DB=0                    # Redis database index
-
-# For Google Cloud Storage:
-# PROVIDER=google             # Uncomment to use Google Cloud Storage provider
-CONFIG=./config/google-cloud.config.json # Path to Google Cloud config file
-```
+After starting the server, you can interact with the API using tools like [Postman](https://www.postman.com/) or `curl`.
 
 ---
 
-## Implementation Notes
+## REST API Endpoints
 
-1. **Storage Providers**: Implemented both local filesystem and Google Cloud Storage with identical interfaces
-2. **Rate Limiting**: Used Redis to track daily upload/download limits per IP
-3. **Cleanup Job**: Implemented as a background job that runs daily
-4. **Error Handling**: Comprehensive error handling and logging throughout
-5. **Testing**: Full test coverage for both unit and integration tests
-6. **Configuration**: All aspects are configurable via environment variables
+### 1. Upload a File
+
+**POST** `/files`  
+Upload a file (multipart/form-data, field name: `file`).
+
+**Sample Request (curl):**
+```bash
+curl -X POST http://localhost:6000/files \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@/path/to/your/testfile.txt"
+```
+
+**Sample Response:**
+```json
+{
+    "publicKey": "de46cf0d8a7ad373f07eb89ed5fcb59d",
+    "privateKey": "cab1bbb107b80a56519545f6e50d260204fbe8dd232c57801c60be450abc0188"
+}
+```
+
+---
+
+### 2. Download a File
+
+**GET** `/files/:publicKey`  
+Download a file by its public key.
+
+**Sample Request (curl):**
+```bash
+curl -O http://localhost:6000/files/de46cf0d8a7ad373f07eb89ed5fcb59d
+```
+
+**Sample Response:**  
+Returns the file as an attachment.
+
+---
+
+### 3. Delete a File
+
+**DELETE** `/files/:privateKey`  
+Delete a file by its private key.
+
+**Sample Request (curl):**
+```bash
+curl -X DELETE http://localhost:6000/files/cab1bbb107b80a56519545f6e50d260204fbe8dd232c57801c60be450abc0188
+```
+
+**Sample Response:**
+```json
+{
+  "success": true
+}
+```
+
+---
+
+## Sample Postman Collection
+
+A Postman collection is provided in the repository for quick API testing.  
+Import it into Postman and use the pre-configured requests for upload, download, and delete operations.
 
 ---
 
@@ -171,16 +276,34 @@ npm run test:integration
 
 ---
 
-## API Endpoints
+## Coding Style & Productivity
 
-- `POST /files` — Upload a file
-- `GET /files/:publicKey` — Download a file
-- `DELETE /files/:privateKey` — Delete a file
+- **Consistent Formatting:** Use [Prettier](https://prettier.io/) or your IDE's formatter for clean code.
+- **Modular Structure:** Keep controllers, services, models, and routes in separate folders.
+- **Comment Your Code:** All major logic and configuration files are commented for clarity.
+- **Environment Driven:** Use `.env` for all configuration—never hardcode secrets.
+- **Testing:** Write unit and integration tests for every new feature.
+- **Error Handling:** Always handle errors and log them using the provided logger.
+- **Latest Node.js LTS:** Ensure you are running the latest Node.js LTS version.
 
 ---
 
-## Notes
+## Implementation Notes
+
+1. **Storage Providers:** Both local filesystem and Google Cloud Storage are supported with identical interfaces.
+2. **Rate Limiting:** Redis tracks daily upload/download limits per IP.
+3. **Cleanup Job:** Background job runs periodically to remove inactive files.
+4. **Error Handling:** Centralized error middleware and logging.
+5. **Testing:** Full coverage for unit and integration tests.
+6. **Configuration:** All possible aspects are configurable via environment variables.
+
+---
+
+## Troubleshooting & Notes
 
 - Daily upload/download limits and automatic cleanup are enforced per IP.
 - Logs are stored in `/logs` and output to the console.
-- For Google Cloud Storage, ensure your service account config is correct
+- For Google Cloud Storage, ensure your service account config is correct and the bucket exists.
+- If you encounter permission errors with Google Cloud, double-check your service account roles and bucket permissions.
+- For Redis issues, ensure your Redis server is running and accessible with the provided credentials.
+- All code is written in JavaScript and thoroughly commented.
