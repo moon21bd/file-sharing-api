@@ -1,4 +1,4 @@
-# File Sharing API
+# File Sharing API Server
 
 A secure, scalable, and well-tested file-sharing API built with Node.js and Express.  
 Supports file upload, download, and deletion with configurable storage providers (local filesystem or Google Cloud Storage).  
@@ -24,6 +24,7 @@ Includes daily upload/download limits, automatic cleanup of inactive files, robu
 - [How to Run](#how-to-run)
 - [REST API Endpoints](#rest-api-endpoints)
 - [Sample Requests & Responses](#sample-requests--responses)
+- [Postman Collection](#postman-collection)
 - [Testing Guide](#testing-guide)
 - [Coding Style & Productivity](#coding-style--productivity)
 - [Implementation Notes](#implementation-notes)
@@ -247,10 +248,21 @@ curl -X DELETE http://localhost:6000/files/cab1bbb107b80a56519545f6e50d260204fbe
 
 ---
 
-## Sample Postman Collection
+## Postman Collection
 
-A Postman collection is provided in the repository for quick API testing.  
-Import it into Postman and use the pre-configured requests for upload, download, and delete operations.
+A ready-to-use Postman collection is provided for quick API testing and demonstration.
+
+- **Location:** [`docs/File-Sharing-API-Server.postman_collection.json`](docs/File-Sharing-API-Server.postman_collection.json)
+- **Import Instructions:**
+  1. Open [Postman](https://www.postman.com/).
+  2. Click "Import" and select the collection file.
+  3. Use the pre-configured requests for upload, download, and delete operations.
+  4. Set the `baseurl` variable to your running server (e.g., `http://localhost:6000`).
+
+**Collection Overview:**
+- **POST /files** — Upload a file (form-data, key: `file`)
+- **GET /files/:publicKey** — Download a file
+- **DELETE /files/:privateKey** — Delete a file
 
 ---
 
@@ -295,7 +307,7 @@ npm run test:integration
 3. **Cleanup Job:** Background job runs periodically to remove inactive files.
 4. **Error Handling:** Centralized error middleware and logging.
 5. **Testing:** Full coverage for unit and integration tests.
-6. **Configuration:** All possible aspects are configurable via environment variables.
+6. **Configuration:** All aspects are configurable via environment variables.
 
 ---
 

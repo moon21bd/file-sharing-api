@@ -1,0 +1,126 @@
+{
+	"info": {
+		"_postman_id": "ec9a5b9b-466b-4994-a2db-5ed9ea8bbec0",
+		"name": "File Sharing API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "449341",
+		"_collection_link": "https://rhmoon21.postman.co/workspace/Sohoj-%2526-Others~e92a28c4-e481-43c1-841c-0753c3ef15a7/collection/449341-ec9a5b9b-466b-4994-a2db-5ed9ea8bbec0?action=share&source=collection_link&creator=449341"
+	},
+	"item": [
+		{
+			"name": "files",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/Users/moon/Documents/Screenshots/Screenshot 2025-08-16 at 11.09.31 PM.png"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{baseurl}}/files",
+					"host": [
+						"{{baseurl}}"
+					],
+					"path": [
+						"files"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "files/:publicKey",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "multipart/form-data",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": []
+				},
+				"url": {
+					"raw": "{{baseurl}}/files/de46cf0d8a7ad373f07eb89ed5fcb59d",
+					"host": [
+						"{{baseurl}}"
+					],
+					"path": [
+						"files",
+						"de46cf0d8a7ad373f07eb89ed5fcb59d"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "files/:privateKey",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "multipart/form-data",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": []
+				},
+				"url": {
+					"raw": "{{baseurl}}/files/22794accd021c254d4ce44407e7aa21a99654623577111f21ff9990911a69b9c",
+					"host": [
+						"{{baseurl}}"
+					],
+					"path": [
+						"files",
+						"22794accd021c254d4ce44407e7aa21a99654623577111f21ff9990911a69b9c"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseurl",
+			"value": "http://localhost:6000",
+			"type": "string"
+		}
+	]
+}
