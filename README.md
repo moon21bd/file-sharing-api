@@ -27,16 +27,68 @@ npm install
 - Edit `.env` to set your preferred configuration (port, storage provider, limits, etc).
 
 ### 4. (Optional) Configure Google Cloud Storage
-- If using Google Cloud Storage, set `PROVIDER=google` and provide the path to your service account config in `.env`.
 
-### 5. Start the server
-```bash
-npm start
-```
-- For development with auto-reload:
-  ```bash
-  npm run dev
-  ```
+#### Google Cloud Storage Setup
+
+If you want to use Google Cloud Storage as your provider, follow these steps:
+
+1. **Create a Google Cloud Project**  
+   - Go to [Google Cloud Console](https://console.cloud.google.com/).
+   - Create a new project or select an existing one.
+
+2. **Enable Google Cloud Storage API**  
+   - In your project, go to "APIs & Services" > "Library".
+   - Search for "Cloud Storage" and enable it.
+
+3. **Create a Service Account**  
+   - Go to "IAM & Admin" > "Service Accounts".
+   - Click "Create Service Account".
+   - Assign a name and description.
+   - Grant the service account "Storage Admin" role.
+   - Click "Done".
+
+4. **Generate Service Account Key**  
+   - Click on your service account.
+   - Go to "Keys" tab.
+   - Click "Add Key" > "Create new key" > "JSON".
+   - Download the JSON file.
+
+5. **Create a Storage Bucket**  
+   - Go to "Storage" > "Buckets".
+   - Click "Create" and follow the instructions.
+
+6. **Configure the API**  
+   - Copy the downloaded JSON file to `config/google-cloud.config.json`.
+   - Edit the file and add `"bucket_name": "your-bucket-name"` at the end.
+   - Your config should look like:
+     ```json
+     {
+       "type": "service_account",
+       "project_id": "your-project-id",
+       "private_key_id": "your_private_key_id",
+       "private_key": "-----BEGIN PRIVATE KEY-----\nYOUR LONG PRIVATE KEY HERE\n-----END PRIVATE KEY-----\n",
+       "client_email": "your-service-account-email",
+       "client_id": "your_client_id",
+       "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+       "token_uri": "https://oauth2.googleapis.com/token",
+       "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+       "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/your-service-account-email",
+       "universe_domain": "googleapis.com",
+       "bucket_name": "your-bucket-name"
+     }
+     ```
+   - **Tip:** You can copy the example config:
+     ```bash
+     cp config/google-cloud.config.example.json config/google-cloud.config.json
+     ```
+     Then update the values as described above.
+
+7. **Set Environment Variables**
+   - In your `.env` file, set:
+     ```
+     PROVIDER=google
+     CONFIG=./config/google-cloud.config.json
+     ```
 
 ---
 
@@ -131,4 +183,4 @@ npm run test:integration
 
 - Daily upload/download limits and automatic cleanup are enforced per IP.
 - Logs are stored in `/logs` and output to the console.
-- For Google Cloud Storage, ensure your service account config is correct and the bucket exists.
+- For Google Cloud Storage, ensure your service account config is correct
