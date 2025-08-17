@@ -61,20 +61,27 @@ npm start
 
 ## Environment Variables
 
-Create a `.env` file:
-```
-PORT=3000
-FOLDER=./uploads
-PROVIDER=local
-INACTIVITY_PERIOD=30d
-DAILY_UPLOAD_LIMIT=100MB
-DAILY_DOWNLOAD_LIMIT=1GB
-```
+Create a `.env` file with the following example configuration:
 
-For Google Cloud Storage:
 ```
-PROVIDER=google
-CONFIG=./config/google-cloud.config.json
+PORT=6000                     # Port number for the server to listen on
+FOLDER=./uploads              # Directory path for storing uploaded files
+PROVIDER=local                # Storage provider type (local or google)
+
+INACTIVITY_PERIOD=10m         # Period of inactivity before cleanup (default: 30d)
+DAILY_UPLOAD_LIMIT=5MB        # Maximum upload limit per day (default: 100MB)
+DAILY_DOWNLOAD_LIMIT=3MB      # Maximum download limit per day (default: 1GB)
+TIME_TO_CLEAN_UP_PROCESS_IN_MS=60000 # Cleanup interval in milliseconds (default: 1 minute)
+
+# For Redis configuration:
+REDIS_HOST=localhost          # Redis server hostname
+REDIS_PORT=6379               # Redis server port
+REDIS_PASSWORD=               # Redis password (leave empty if not required)
+REDIS_DB=0                    # Redis database index
+
+# For Google Cloud Storage:
+# PROVIDER=google             # Uncomment to use Google Cloud Storage provider
+CONFIG=./config/google-cloud.config.json # Path to Google Cloud config file
 ```
 
 ---
