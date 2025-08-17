@@ -1,0 +1,53 @@
+{
+  "name": "file-sharing-api",
+  "version": "1.0.0",
+  "description": "File Sharing API Server",
+  "main": "server.js",
+  "author": {
+    "name": "Raqibul Hasan Moon",
+    "email": "rhmoon21@gmail.com"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "__test": "jest --coverage",
+    "__test:unit": "jest --coverage tests/unit",
+    "__test:integration": "jest --coverage tests/integration",
+    "test": "jest --coverage --detectOpenHandles",
+    "test:unit": "jest --coverage --detectOpenHandles tests/unit",
+    "test:integration": "jest --coverage --detectOpenHandles tests/integration"
+  },
+  "jest": {
+    "setupFilesAfterEnv": [
+      "./tests/setup.js"
+    ],
+    "testEnvironment": "node",
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/tests/"
+    ],
+    "collectCoverageFrom": [
+      "**/*.js",
+      "!**/node_modules/**",
+      "!**/tests/**",
+      "!**/config/**"
+    ]
+  },
+  "dependencies": {
+    "@google-cloud/storage": "^6.12.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "redis": "^4.6.7",
+    "winston": "^3.10.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "memfs": "^4.36.0",
+    "mock-fs": "^5.5.0",
+    "mock-redis-client": "^0.91.13",
+    "nodemon": "^3.0.1",
+    "supertest": "^6.3.4"
+  }
+}
