@@ -56,7 +56,10 @@ const mockRateLimitService = {
     const current = 0;
     
     if (current >= downloadLimit) {
-      throw new Error("Daily download limit exceeded");
+      const error = new Error("Daily download limit exceeded");
+      error.statusCode = 429;
+      error.details = "Please try again later";
+      throw error;
     }
   }),
   
@@ -125,18 +128,20 @@ describe("RateLimitService", () => {
 
     it("should reject when over limit", async () => {
       // Override implementation for this test
-      mockRateLimitService.checkDownloadLimit.mockRejectedValueOnce(
-        new Error("Daily download limit exceeded")
-      );
+      const error = new Error("Daily download limit exceeded");
+      error.statusCode = 429;
+      error.details = "Please try again later";
+      mockRateLimitService.checkDownloadLimit.mockRejectedValueOnce(error);
       
       await expect(mockRateLimitService.checkDownloadLimit("127.0.0.1")).rejects.toThrow("Daily download limit exceeded");
     });
 
     it("should handle service errors", async () => {
       // Override implementation for this test
-      mockRateLimitService.checkDownloadLimit.mockRejectedValueOnce(
-        new Error("Redis connection error")
-      );
+      const error = new Error("Rate limit service unavailable");
+      error.statusCode = 503;
+      error.details = "Service temporarily unavailable";
+      mockRateLimitService.checkDownloadLimit.mockRejectedValueOnce(error);
       
       await expect(mockRateLimitService.checkDownloadLimit("127.0.0.1")).rejects.toThrow();
     });
@@ -151,9 +156,10 @@ describe("RateLimitService", () => {
 
     it("should handle service errors", async () => {
       // Override implementation for this test
-      mockRateLimitService.trackDownload.mockRejectedValueOnce(
-        new Error("Redis connection error")
-      );
+      const error = new Error("Rate limit service unavailable");
+      error.statusCode = 503;
+      error.details = "Service temporarily unavailable";
+      mockRateLimitService.trackDownload.mockRejectedValueOnce(error);
       
       await expect(mockRateLimitService.trackDownload("127.0.0.1", 50)).rejects.toThrow();
     });

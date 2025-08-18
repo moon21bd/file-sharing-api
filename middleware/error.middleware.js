@@ -15,15 +15,31 @@ const errorHandler = (err, req, res, next) => {
   // Handle specific filesystem errors (file not found)
   if (err.code === "ENOENT") {
     return res.status(404).json({
-      error: "File not found",
+      message: "File not found",
       details: "The requested file does not exist",
     });
   }
 
-  // Handle invalid private keys (file not found by key)
+  // Handle rate limit exceeded errors
+  if (err.message.includes("limit exceeded")) {
+    return res.status(429).json({
+      message: err.message,
+      details: "Please try again later",
+    });
+  }
+
+  // Handle service unavailable errors
+  if (err.statusCode === 503) {
+    return res.status(503).json({
+      message: err.message,
+      details: "Service temporarily unavailable",
+    });
+  }
+
+  // Handle invalid private keys
   if (err.message.includes("Invalid private key")) {
-    return res.status(404).json({
-      error: "File not found",
+    return res.status(500).json({
+      message: "Invalid private key",
       details: "No file matches the provided key",
     });
   }
@@ -35,7 +51,8 @@ const errorHandler = (err, req, res, next) => {
 
   // Send error response, including stack trace and error type in development mode
   res.status(statusCode).json({
-    error: message,
+    message,
+    details: err.details || "An unexpected error occurred",
     ...(process.env.NODE_ENV === "development" && {
       stack: err.stack,
       type: err.name,

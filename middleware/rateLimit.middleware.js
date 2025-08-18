@@ -14,10 +14,12 @@ const uploadRateLimit = async (req, res, next) => {
       if (!result.allowed) {
         logger.error(`Upload rate limit exceeded for IP ${req.ip}: ${result.error.message}`);
         return res.status(429).json({ 
-          error: result.error.message,
-          currentUsage: result.error.currentUsage,
-          limit: result.error.limit,
-          remaining: result.error.remaining
+          message: result.error.message,
+          details: {
+            currentUsage: result.error.currentUsage,
+            limit: result.error.limit,
+            remaining: result.error.remaining
+          }
         });
       }
     }
@@ -26,7 +28,10 @@ const uploadRateLimit = async (req, res, next) => {
   } catch (err) {
     // Log and respond with 500 status if rate limit service fails
     logger.error(`Upload rate limit error for IP ${req.ip}: ${err}`);
-    res.status(500).json({ error: "Rate limit service error" });
+    res.status(503).json({ 
+      message: "Rate limit service unavailable",
+      details: process.env.NODE_ENV === "development" ? err.message : undefined
+    });
   }
 };
 
@@ -43,7 +48,10 @@ const downloadRateLimit = async (req, res, next) => {
   } catch (err) {
     // Log and respond with 429 status if limit exceeded
     logger.error(`Download rate limit exceeded for IP ${req.ip}: ${err}`);
-    res.status(429).json({ error: "Daily download limit exceeded" });
+    res.status(429).json({ 
+      message: "Daily download limit exceeded",
+      details: "Please try again later"
+    });
   }
 };
 

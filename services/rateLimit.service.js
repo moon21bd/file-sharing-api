@@ -56,6 +56,7 @@ class RateLimitService {
           allowed: false,
           error: {
             message: "Daily upload limit exceeded",
+            statusCode: 429,
             currentUsage: current,
             limit: uploadLimit,
             remaining: Math.max(0, uploadLimit - current),
@@ -80,7 +81,7 @@ class RateLimitService {
       logger.error(`Upload limit check error: ${err}`);
       return {
         allowed: false,
-        error: { message: "Rate limit service unavailable" },
+        error: { message: "Rate limit service unavailable", statusCode: 503 },
       };
     }
   }
@@ -94,11 +95,21 @@ class RateLimitService {
       const current = parseInt(await this.client.get(key)) || 0; // Get current usage
       if (current >= downloadLimit) {
         // If limit exceeded, throw error
-        throw new Error("Daily download limit exceeded");
+        const error = new Error("Daily download limit exceeded");
+        error.statusCode = 429;
+        error.details = "Please try again later";
+        error.currentUsage = current;
+        error.limit = downloadLimit;
+        error.remaining = Math.max(0, downloadLimit - current);
+        throw error;
       }
     } catch (err) {
-      // Log error and propagate
+      // Log error and propagate with proper status code
       logger.error(`Download limit check error: ${err}`);
+      if (!err.statusCode) {
+        err.statusCode = 503;
+        err.details = "Service temporarily unavailable";
+      }
       throw err;
     }
   }
@@ -114,8 +125,12 @@ class RateLimitService {
         await this.client.expire(key, 86400); // Set TTL to 24 hours if first download
       }
     } catch (err) {
-      // Log error and propagate
+      // Log error and propagate with proper status code
       logger.error(`Download tracking error: ${err}`);
+      if (!err.statusCode) {
+        err.statusCode = 503;
+        err.details = "Service temporarily unavailable";
+      }
       throw err;
     }
   }

@@ -70,6 +70,7 @@ describe("RateLimitService Spec", () => {
     
     expect(result.allowed).toBe(false);
     expect(result.error.message).toBe("Daily upload limit exceeded");
+    expect(result.error.statusCode).toBe(429);
     expect(result.error.currentUsage).toBeDefined();
     expect(result.error.limit).toBeDefined();
     expect(result.error.remaining).toBeDefined();
@@ -82,6 +83,7 @@ describe("RateLimitService Spec", () => {
     
     expect(result.allowed).toBe(false);
     expect(result.error.message).toBe("Rate limit service unavailable");
+    expect(result.error.statusCode).toBe(503);
   });
 
   it("should check download limit", async () => {
@@ -93,7 +95,8 @@ describe("RateLimitService Spec", () => {
   it("should reject when over download limit", async () => {
     mockRedisClient.get.mockResolvedValueOnce((1000 * 1024 * 1024 * 1024).toString());
     
-    await expect(RateLimitService.checkDownloadLimit("127.0.0.1")).rejects.toThrow("Daily download limit exceeded");
+    const error = await expect(RateLimitService.checkDownloadLimit("127.0.0.1")).rejects.toThrow("Daily download limit exceeded");
+    expect(error.statusCode).toBe(429);
   });
 
   it("should handle download limit service errors", async () => {

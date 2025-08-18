@@ -51,6 +51,7 @@ class FileService {
     } catch (err) {
       // Log error if upload fails
       logger.error(`Error in uploadFile service: ${err}|${err.stack}`);
+      if (!err.statusCode) err.statusCode = 500;
       throw err;
     }
   }
@@ -66,6 +67,7 @@ class FileService {
     } catch (err) {
       // Log error if download fails
       logger.error(`Error in downloadFile service: ${err}|${err.stack}`);
+      if (!err.statusCode) err.statusCode = 500;
       throw err;
     }
   }
@@ -81,6 +83,7 @@ class FileService {
     } catch (err) {
       // Log error if deletion fails
       logger.error(`Error in deleteFile service: ${err}|${err.stack}`);
+      if (!err.statusCode) err.statusCode = 500;
       throw err;
     }
   }
@@ -100,6 +103,7 @@ class FileService {
     } catch (err) {
       // Log error if cleanup fails
       logger.error(`Error in cleanupInactiveFiles: ${err}|${err.stack}`);
+      if (!err.statusCode) err.statusCode = 500;
       throw err;
     }
   }

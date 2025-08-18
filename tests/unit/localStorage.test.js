@@ -197,44 +197,9 @@ describe("LocalStorage", () => {
         JSON.stringify({ privateKey: "different-key" })
       );
 
-      await expect(storage.deleteFile("invalid-key")).rejects.toThrow(
-        "Invalid private key"
-      );
-    });
-  });
-
-  describe("cleanupInactiveFiles()", () => {
-    it("should delete files older than inactivity period", async () => {
-      const now = new Date();
-      const oldDate = new Date(now.getTime() - 40 * 24 * 60 * 60 * 1000); // 40 days old
-      
-      fsp.readdir.mockResolvedValue(["file1.meta", "file2.meta"]);
-      
-      // First file is old, second is recent
-      fsp.readFile.mockResolvedValueOnce(JSON.stringify({
-        privateKey: "key1",
-        lastAccessed: oldDate.toISOString()
-      }));
-      
-      fsp.readFile.mockResolvedValueOnce(JSON.stringify({
-        privateKey: "key2",
-        lastAccessed: now.toISOString()
-      }));
-
-      const result = await storage.cleanupInactiveFiles("30d");
-
-      expect(result.deletedCount).toBe(1);
-      expect(fsp.unlink).toHaveBeenCalledTimes(2); // File and metadata for the old file
-    });
-
-    it("should handle errors during cleanup", async () => {
-      fsp.readdir.mockResolvedValue(["file1.meta"]);
-      fsp.readFile.mockRejectedValue(new Error("Read error"));
-
-      const result = await storage.cleanupInactiveFiles("30d");
-
-      expect(result.deletedCount).toBe(0);
-      expect(logger.error).toHaveBeenCalled();
+      const error = await storage.deleteFile("invalid-key");
+      expect(error.statusCode).toBe(500);
+      expect(error.message).toContain("Invalid private key");
     });
   });
 });

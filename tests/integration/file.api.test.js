@@ -53,7 +53,7 @@ jest.mock('../../models/storage/localStorage', () => {
 // Now require the app after mocks are set up
 const app = require("../../app");
 
-// Mock rate limit service first, then define the mock object
+// Mock rate limit service as a singleton
 const mockRateLimitService = {
   checkUploadLimit: jest.fn().mockResolvedValue({
     allowed: true,
@@ -62,13 +62,15 @@ const mockRateLimitService = {
     remaining: 1000000
   }),
   checkDownloadLimit: jest.fn().mockResolvedValue(undefined),
-  trackDownload: jest.fn().mockResolvedValue(undefined)
+  trackDownload: jest.fn().mockResolvedValue(undefined),
+  client: {
+    connect: jest.fn().mockResolvedValue(undefined),
+    disconnect: jest.fn().mockResolvedValue(undefined)
+  }
 };
 
-// Use the factory pattern for the mock to avoid reference errors
-jest.mock('../../services/rateLimit.service', () => {
-  return jest.fn(() => mockRateLimitService);
-});
+// Mock the service as a singleton
+jest.mock('../../services/rateLimit.service', () => mockRateLimitService);
 
 describe("File API", () => {
   const testBuffer = Buffer.from("Test content");
@@ -95,11 +97,29 @@ describe("File API", () => {
         .post("/files")
         .expect(400);
 
-      expect(res.body).toHaveProperty("error", "No file provided");
+      expect(res.body).toHaveProperty("message", "No file provided");
+    });
+
+    it("should return 400 for unsupported file types", async () => {
+      const res = await request(app)
+        .post("/files")
+        .attach("file", testBuffer, "test.exe")
+        .expect(400);
+
+      expect(res.body).toHaveProperty("message", "Only certain file types are allowed");
+    });
+
+    it("should return 413 for files exceeding size limit", async () => {
+      const largeBuffer = Buffer.alloc(11 * 1024 * 1024); // 11MB
+      const res = await request(app)
+        .post("/files")
+        .attach("file", largeBuffer, "large.txt")
+        .expect(413);
+
+      expect(res.body).toHaveProperty("message", "File too large");
     });
 
     it("should enforce upload limits", async () => {
-      // Mock rate limit service to reject
       mockRateLimitService.checkUploadLimit.mockResolvedValueOnce({
         allowed: false,
         error: {
@@ -115,7 +135,59 @@ describe("File API", () => {
         .attach("file", testBuffer, "test.txt")
         .expect(429);
 
-      expect(res.body).toHaveProperty("error", "Daily upload limit exceeded");
+      expect(res.body).toHaveProperty("message", "Daily upload limit exceeded");
+      expect(res.body).toHaveProperty("details", "Please try again later");
+    });
+
+    it("should handle rate limit service unavailability", async () => {
+      mockRateLimitService.checkUploadLimit.mockRejectedValueOnce(
+        new Error("Rate limit service unavailable")
+      );
+
+      const res = await request(app)
+        .post("/files")
+        .attach("file", testBuffer, "test.txt")
+        .expect(503);
+
+      expect(res.body).toHaveProperty("message", "Service temporarily unavailable");
+      expect(res.body).toHaveProperty("details", "Please try again later");
+    });
+
+    it("should handle concurrent file uploads", async () => {
+      const uploads = Array(3).fill().map(() =>
+        request(app)
+          .post("/files")
+          .attach("file", testBuffer, "test.txt")
+      );
+
+      const results = await Promise.all(uploads);
+      results.forEach(res => {
+        expect(res.status).toBe(201);
+        expect(res.body).toHaveProperty("publicKey");
+        expect(res.body).toHaveProperty("privateKey");
+      });
+    });
+
+    it("should return 404 for missing file", async () => {
+      const res = await request(app)
+        .get("/files/nonexistent-key")
+        .expect(404);
+
+      expect(res.body).toHaveProperty("message", "File not found");
+      expect(res.body).toHaveProperty("details", "The requested file does not exist");
+    });
+
+    it("should enforce download limits", async () => {
+      mockRateLimitService.checkDownloadLimit.mockRejectedValueOnce(
+        new Error("Daily download limit exceeded")
+      );
+
+      const res = await request(app)
+        .get("/files/mock-public")
+        .expect(429);
+
+      expect(res.body).toHaveProperty("message", "Daily download limit exceeded");
+      expect(res.body).toHaveProperty("details", "Please try again later");
     });
   });
 
@@ -135,7 +207,16 @@ describe("File API", () => {
         .get("/files/nonexistent-key")
         .expect(404);
 
-      expect(res.body).toHaveProperty("error", "Invalid private key");
+      expect(res.body).toHaveProperty("message", "File not found");
+      expect(res.body).toHaveProperty("details", "The requested file does not exist");
+    });
+
+    it("should return 400 for malformed public key", async () => {
+      const res = await request(app)
+        .get("/files/invalid!@#$")
+        .expect(400);
+
+      expect(res.body).toHaveProperty("message", "Public key must be a 32-character hexadecimal string");
     });
 
     it("should enforce download limits", async () => {
@@ -147,7 +228,21 @@ describe("File API", () => {
         .get("/files/mock-public")
         .expect(429);
 
-      expect(res.body).toHaveProperty("error", "Daily download limit exceeded");
+      expect(res.body).toHaveProperty("message", "Daily download limit exceeded");
+      expect(res.body).toHaveProperty("details", "Please try again later");
+    });
+
+    it("should handle rate limit service errors", async () => {
+      mockRateLimitService.checkDownloadLimit.mockRejectedValueOnce(
+        new Error("Rate limit service unavailable")
+      );
+
+      const res = await request(app)
+        .get("/files/mock-public")
+        .expect(503);
+
+      expect(res.body).toHaveProperty("message", "Service temporarily unavailable");
+      expect(res.body).toHaveProperty("details", "Please try again later");
     });
   });
 
@@ -164,9 +259,32 @@ describe("File API", () => {
     it("should handle invalid private key", async () => {
       const res = await request(app)
         .delete("/files/invalid-key")
-        .expect(200);
+        .expect(500);
 
-      expect(res.body).toHaveProperty("error", "Invalid private key");
+      expect(res.body).toHaveProperty("message", "Invalid private key");
+      expect(res.body).toHaveProperty("details", "No file matches the provided key");
+    });
+
+    it("should return 400 for malformed private key", async () => {
+      const res = await request(app)
+        .delete("/files/invalid!@#$")
+        .expect(400);
+
+      expect(res.body).toHaveProperty("message", "Private key must be a 32-character hexadecimal string");
+    });
+
+    it("should handle concurrent file deletions", async () => {
+      const deletions = Array(3).fill().map(() =>
+        request(app)
+          .delete("/files/mock-private")
+      );
+
+      const results = await Promise.all(deletions);
+      results.forEach(res => {
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual({ success: true });
+      });
+      expect(mockLocalStorage.deleteFile).toHaveBeenCalledTimes(3);
     });
   });
 });

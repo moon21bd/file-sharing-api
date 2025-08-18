@@ -144,10 +144,11 @@ class LocalStorage extends StorageInterface {
       }
 
       if (!publicKey) {
-        throw new Error("Invalid private key");
+        const error = new Error("Invalid private key");
+        error.statusCode = 500;
+        throw error;
       }
 
-      // Delete files
       const filePath = path.join(this.folderPath, publicKey);
       const metaPath = path.join(this.folderPath, `${publicKey}.meta`);
 
@@ -156,6 +157,9 @@ class LocalStorage extends StorageInterface {
       return { success: true };
     } catch (err) {
       logger.error(`Delete failed: ${err}`);
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
       throw err;
     }
   }
@@ -201,34 +205,6 @@ class LocalStorage extends StorageInterface {
       errors: errors.length > 0 ? errors : undefined,
     };
   }
-
-  /* async cleanupInactiveFiles(inactivityPeriod) {
-    const files = await fsp.readdir(this.folderPath);
-    const metaFiles = files.filter((f) => f.endsWith(".meta"));
-    const now = new Date();
-    const cutoff = new Date(now - this.parseInactivityPeriod(inactivityPeriod));
-
-    let deletedCount = 0;
-
-    for (const metaFile of metaFiles) {
-      try {
-        const metaPath = path.join(this.folderPath, metaFile);
-        const metaData = JSON.parse(await fsp.readFile(metaPath, "utf8"));
-        const lastAccessed = new Date(metaData.lastAccessed);
-
-        if (lastAccessed < cutoff) {
-          const publicKey = metaFile.replace(".meta", "");
-          // Use new internal method that bypasses private key check
-          await this._deleteByPublicKey(publicKey);
-          deletedCount++;
-        }
-      } catch (err) {
-        logger.error(`Error processing ${metaFile}:`, err);
-      }
-    }
-
-    return { deletedCount };
-  } */
 
   // internal deletion method
   async _deleteByPublicKey(publicKey) {

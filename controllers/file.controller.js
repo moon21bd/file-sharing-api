@@ -22,7 +22,7 @@ class FileController {
       // Check if a file was provided in the request
       if (!req.file) {
         return res.status(400).json({
-          error: "No file provided",
+          message: "No file provided",
           details: "Please include a file in your request",
         });
       }
@@ -39,9 +39,10 @@ class FileController {
         req.file.size
       );
       if (!limitCheck.allowed) {
-        return res.status(429).json({
-          error: limitCheck.error.message,
-        });
+        const error = new Error(limitCheck.error.message);
+        error.statusCode = 429;
+        error.details = "Please try again later";
+        throw error;
       }
 
       // Upload the file using the fileService
@@ -50,13 +51,9 @@ class FileController {
         ...result,
       });
     } catch (err) {
-      // Log and respond with error if upload fails
+      // Log and pass errors to the next middleware
       logger.error(`Upload error: ${err}`);
-      res.status(500).json({
-        error: "File upload failed",
-        details:
-          process.env.NODE_ENV === "development" ? err.message : undefined,
-      });
+      next(err);
     }
   }
 
@@ -73,10 +70,10 @@ class FileController {
       const { publicKey } = req.params;
       // Validate publicKey format (must be 32-character hex string)
       if (!publicKey || !/^[a-f0-9]{32}$/.test(publicKey)) {
-        return res.status(400).json({
-          error: "Invalid public key format",
-          details: "Key must be 32-character hex string",
-        });
+        const error = new Error("Invalid public key format");
+        error.statusCode = 400;
+        error.details = "Public key must be a 32-character hexadecimal string";
+        throw error;
       }
       const ip = req.ip;
 
