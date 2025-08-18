@@ -1,12 +1,31 @@
 {
   "name": "file-sharing-api",
   "version": "1.0.0",
-  "description": "File Sharing API Server",
+  "description": "A secure, scalable Node.js File Sharing API with local & Google Cloud Storage providers, Redis limits, automated cleanup, and full test coverage.",
   "main": "server.js",
   "author": {
     "name": "Raqibul Hasan Moon",
     "email": "rhmoon21@gmail.com"
   },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/moon21bd/file-sharing-api.git"
+  },
+  "bugs": {
+    "url": "https://github.com/moon21bd/file-sharing-api/issues"
+  },
+  "homepage": "https://github.com/moon21bd/file-sharing-api#readme",
+  "keywords": [
+    "nodejs",
+    "express",
+    "file-sharing",
+    "redis",
+    "google-cloud-storage",
+    "api",
+    "jest",
+    "supertest"
+  ],
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",

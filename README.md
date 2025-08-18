@@ -6,6 +6,24 @@ Includes daily upload/download limits, automatic cleanup of inactive files, robu
 
 ---
 
+## Executive Overview (For Recruiters & Hiring Managers)
+
+This project is a robust file-sharing API designed to provide a secure and user-friendly way to upload, download, and manage files. It was built to demonstrate expertise in backend development, scalable architecture, and cloud integrations, making it suitable for real-world applications that require reliable file management with strict usage controls.
+
+---
+
+## Technical Overview (For Engineers)
+
+- **Main Technologies:** Node.js, Express, Redis, Jest, Supertest, Google Cloud Storage, Winston, Multer  
+- **Architecture Highlights:**  
+  - Clear separation of concerns with controllers and services  
+  - Pluggable storage providers supporting local filesystem and Google Cloud Storage  
+  - Background cleanup job for removing inactive files  
+  - Comprehensive error handling and centralized logging with Winston  
+  - Environment-driven configuration for flexible deployment and management  
+
+---
+
 ## Architecture Diagram
 
 ![File Sharing API Architecture](docs/diagram.png)
